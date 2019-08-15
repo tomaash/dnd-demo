@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Ref } from "react";
 import { useDrag, DragSourceMonitor } from "react-dnd";
 import ItemTypes from "./ItemTypes";
 import { TStop, TRoute } from "./createStore";
@@ -11,8 +11,8 @@ const style: React.CSSProperties = {
   marginRight: "1.5rem",
   marginBottom: "1.5rem",
   cursor: "move",
-  float: "left",
-  color: "red"
+  color: "red",
+  position: "absolute"
 };
 
 interface StopProps {
@@ -27,6 +27,25 @@ const removeItem = (arr, item) => {
   }
 };
 
+const MIN_DISTANCE = 50;
+
+const insertStop = (stops: Array<TStop>, stop: TStop, offset: number) => {
+  const idx = stops.findIndex((value, i) => value.offset > offset);
+  if (idx !== -1) {
+    if (idx == 0) {
+      stop.offset = stops[0].offset - MIN_DISTANCE;
+      if (stop.offset < 0) stop.offset = 0;
+    } else {
+      stop.offset = (stops[idx - 1].offset + stops[idx].offset) / 2;
+    }
+    stops.splice(idx, 0, stop);
+  } else {
+    stop.offset = stops[stops.length - 1].offset + MIN_DISTANCE;
+    stops.push(stop);
+  }
+  console.log(stops.map(x => x.offset));
+};
+
 export const Stop: React.FC<StopProps> = ({ stop, route }) => {
   const store = useStore();
   const [{ isDragging }, drag] = useDrag({
@@ -35,10 +54,13 @@ export const Stop: React.FC<StopProps> = ({ stop, route }) => {
       item: { stop: TStop; route: TRoute } | undefined,
       monitor: DragSourceMonitor
     ) => {
-      const dropResult = monitor.getDropResult() as { route: TRoute };
+      const dropResult = monitor.getDropResult() as {
+        route: TRoute;
+        offset: { x: number; y: number };
+      };
       if (item && dropResult) {
-        dropResult.route.stops.push(stop);
         removeItem(route.stops, stop);
+        insertStop(dropResult.route.stops, stop, dropResult.offset.x);
       }
     },
     collect: monitor => ({
@@ -46,10 +68,11 @@ export const Stop: React.FC<StopProps> = ({ stop, route }) => {
     })
   });
   const opacity = isDragging ? 0.4 : 1;
+  const left = stop.offset;
 
   return (
-    <div ref={drag} style={{ ...style, opacity }}>
-      {stop.name}
+    <div ref={drag} style={{ ...style, opacity, left }}>
+      <div>{stop.name}</div>
     </div>
   );
 };
