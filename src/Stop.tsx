@@ -43,7 +43,7 @@ const insertStop = (stops: Array<TStop>, stop: TStop, offset: number) => {
     stop.offset = stops[stops.length - 1].offset + MIN_DISTANCE;
     stops.push(stop);
   }
-  console.log(stops.map(x => x.offset));
+  console.log("Stop positions:", stops.map(x => x.offset));
 };
 
 export const Stop: React.FC<StopProps> = ({ stop, route }) => {
